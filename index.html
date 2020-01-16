@@ -21,24 +21,24 @@
 <div id="options_div" style="border-style: solid; width: 600px; align-content: center; display: grid; padding-bottom: 5px; padding-right: 5px; padding-left: 5px; padding-top: 5px;">
 
 <div id="proj_div">
-<label class="label_class">Actas to project:&#9;</label><span id="proj_select_span" class="input_class" style="text-align-last: right;"/>
+<label class="label_class">Actas to Simulate:&#9;</label><span id="proj_select_span" class="input_class" style="text-align-last: right;"/>
 </div>
 
 <div id="custom_div" style="display: none;">
-<label class="label_class">Mesas to project (delimit with whitespace):&#9;</label><input type="text" id="custom_input" class="input_class"/>
+<label class="label_class">Actas to Simulate (Delimiters: commas or whitespace):&#9;</label><input type="text" id="custom_input" class="input_class"/>
 </div>
 
 <div>
 <label class="label_class">Simulations:&#9;</label>
+<input type="text" id="sims_num_input" maxlength="6" value="5" style="text-align-last: center;  width: 100px;"/>
 <span class="input_class">
-<label class="label_class">Count:&nbsp;</label><input type="text" id="sims_num_input" maxlength="6" value="5" style="text-align-last: center;"/>
-<label class="label_class">&nbsp;&nbsp;&nbsp;Type:&nbsp;</label>
-<label><input type="radio" name="sim_type" id="partial_sim">Partial</label>
-<label><input type="radio" name="sim_type" id="full_sim" checked>Full</label>
+<label class="label_class">&nbsp;Actas to Count:&nbsp;</label>
+<label><input type="radio" name="sim_type" id="partial_sim">Only Simulated Actas</label>
+<label><input type="radio" name="sim_type" id="full_sim" checked>All Actas</label>
 </span>
 </div>
 
-<button id="project_button" type="button">Start Projection</button>
+<button id="project_button" type="button">Start Simulations</button>
 </div>
 
 <div id="results_div"></div>
@@ -245,7 +245,7 @@ let do_sims = function(sims_headers, sims_actas) {
 	}
 	
 	// ok, time to do the projection
-	const vote_headers = ['Inscritos','CC','FPV','MTS','UCS','MAS - IPSP','21F','PDC','MNR','PAN-BOL','Votos Válidos','Blancos','Nulos'];
+	const vote_headers = ['Inscritos','CC','FPV','MTS','UCS','MAS - IPSP','21F','PDC','MNR','PAN-BOL','Blancos','Nulos'];
 	const geo_headers = ['País', 'Departamento', 'Provincia', 'Municipio', 'Localidad', 'Recinto'];	
 	let base_totals = []; // only non-projected actas.
 	let real_totals = []; // recreating official vote total.
@@ -255,7 +255,7 @@ let do_sims = function(sims_headers, sims_actas) {
 	for (let i=0; i<acta_keys.length; i++) {
 		let mesa_number = acta_keys[i];
 		let acta_to_project = actas_to_project[mesa_number];
-		if (acta_to_project === undefined) { // if it's not going to be projected, add it.
+		if (acta_to_project === undefined) { // if it's not going to be projected, add it to acta_map.
 			if(saved_do_full_sim) {
 				for (let j=0; j<vote_headers.length; j++) {
 					base_totals[j] += get_acta_data(mesa_number, vote_headers[j]);
@@ -275,7 +275,7 @@ let do_sims = function(sims_headers, sims_actas) {
 			}
 			
 			// add to precinct array.
-			let precinct_name = get_acta_data(mesa_number, 'Recinto');
+			let precinct_name = get_acta_data(mesa_number, geo_headers[geo_headers.length - 1]);
 			let precinct_arr = current_map[precinct_name];
 			if (precinct_arr === undefined) {
 				current_map[precinct_name] = precinct_arr = [];
@@ -303,7 +303,7 @@ let do_sims = function(sims_headers, sims_actas) {
 			// maybe manage two precompute maps. (one: key=mesa_num,val=map_where_randoms_start [need geo_header_index, tho]) (two: key=precinct_arr, val=precinct_vote_table).
 			// problem with #1 is match specificity might change, so maybe check on that?
 				// Nah, it's good for one run, for sure.
-			// #2 seems ok, but i don't know how much it'll save me. doubt the map traversal is that costly.
+			// #2 seems ok, but i don't know how much it'll save me. doubt the map traversal and vote computation is that costly.
 				// Eh, do it for one run.
 			
 			// traverse map as far as you can, then random once you can't any further.
@@ -383,7 +383,7 @@ let do_sims = function(sims_headers, sims_actas) {
 		let emitidos = 0;
 		let valid_votes = 0;
 		for (let i=0; i<votes.length; i++) {
-			if (vote_headers[i] !== 'Inscritos' && vote_headers[i] !== 'Votos Válidos') {
+			if (vote_headers[i] !== 'Inscritos' /*&& vote_headers[i] !== 'Votos Válidos'*/) {
 				emitidos += votes[i];
 				if (vote_headers[i] !== 'Blancos' && vote_headers[i] !== 'Nulos') {
 					valid_votes += votes[i];
@@ -423,7 +423,7 @@ let do_sims = function(sims_headers, sims_actas) {
 				table_raw_pcts.append(document.createElement("td"));
 			}
 		
-			if (vote_headers[i] !== 'Inscritos' && vote_headers[i] !== 'Votos Válidos' && vote_headers[i] !== 'Blancos' && vote_headers[i] !== 'Nulos') {
+			if (vote_headers[i] !== 'Inscritos' /*&& vote_headers[i] !== 'Votos Válidos'*/ && vote_headers[i] !== 'Blancos' && vote_headers[i] !== 'Nulos') {
 				let table_vote_share = document.createElement("td");
 				let vote_share = (valid_votes > 0 ? (votes[i] / valid_votes) * 100.0 : 0);
 				table_vote_share.innerHTML = vote_share.toFixed(2) + '%';
@@ -448,32 +448,34 @@ let do_sims = function(sims_headers, sims_actas) {
 	results_div.append(basic_table);
 	
 	// do the sims.
-	let sims_arr = [];
-	let sims_totals = [];
-	for (let i=0; i<vote_headers.length; i++) { sims_totals[i] = 0; }
-	for (let i=0; i<num_sims; i++) { // num_sims was declared at start of function.
-		let sim = do_simulation(base_totals, actas_to_project);
-		sims_arr.push(sim);
-		for (let j=0; j<vote_headers.length; j++) {
-			//console.debug("sims_totals[j] += sim[j]  =>   "+sims_totals[j]+" += "+sim[j]);
-			sims_totals[j] += sim[j];
+	if (num_sims > 0) {
+		let sims_arr = [];
+		let sims_totals = [];
+		for (let i=0; i<vote_headers.length; i++) { sims_totals[i] = 0; }
+		for (let i=0; i<num_sims; i++) { // num_sims was declared at start of function.
+			let sim = do_simulation(base_totals, actas_to_project);
+			sims_arr.push(sim);
+			for (let j=0; j<vote_headers.length; j++) {
+				//console.debug("sims_totals[j] += sim[j]  =>   "+sims_totals[j]+" += "+sim[j]);
+				sims_totals[j] += sim[j];
+			}
 		}
-	}
-	
-	//console.debug("sims_totals (len: "+sims_totals.length+") => "+sims_totals);
-	//console.debug("sims_arr (len: "+sims_arr.length+") => "+sims_arr);
-	
-	// do averages, then make tables for the sims and add them to the page.
-	let sims_avgs = [];
-	for (let i=0; i<vote_headers.length; i++) { sims_avgs[i] = (sims_totals[i] / num_sims); }
-	results_div.append(make_table(sims_avgs, "Average of All Simulations (" + (sims_arr.length) + ")"));
-	for (let i=0; i<sims_arr.length; i++) {
-		results_div.append(make_table(sims_arr[i], "Simulation #" + (i + 1)));
+		
+		//console.debug("sims_totals (len: "+sims_totals.length+") => "+sims_totals);
+		//console.debug("sims_arr (len: "+sims_arr.length+") => "+sims_arr);
+		
+		// do averages, then make tables for the sims and add them to the page.
+		let sims_avgs = [];
+		for (let i=0; i<vote_headers.length; i++) { sims_avgs[i] = (sims_totals[i] / num_sims); }
+		results_div.append(make_table(sims_avgs, "Average of All Simulations (" + (sims_arr.length) + ")"));
+		for (let i=0; i<sims_arr.length; i++) {
+			results_div.append(make_table(sims_arr[i], "Simulation #" + (i + 1)));
+		}
 	}
 	
 	let button = document.getElementById("project_button");
 	button.style.color = "green";
-	button.innerHTML = "Projection "+(sims_arr.length)+" of "+(sims_arr.length)+" completed.";
+	button.innerHTML = "Simulation "+num_sims+" of "+num_sims+" completed.";
 };
 
 // starts the whole process.
