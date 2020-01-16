@@ -1,37 +1,13 @@
-## Welcome to GitHub Pages
+<h3>A program for the simulation of vote tally sheets in the 2019 Bolivian General Election.</h3>
 
-You can use the [editor on GitHub](https://github.com/futurebum/boliviasims/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
+Uses the method described here:
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+http://cepr.net/publications/reports/bolivia-elections-2019-11
 
-### Markdown
+However, any arbitrary grouping of tally sheets can be simulated. I also provide a few pre-defined groups of tally sheets that have captured particular interest in the reports about the election.
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+(Note: My treatment of tally sheets from unfamiliar countries is very slightly different than the one from CEPR's report. Since CEPR's simulations were done on a single defined set of tally sheets - those verified after the TREP suspension - they knew about the one tally sheet from an unfamiliar country [Colombia] and, in effect, manually controlled for it. However, because my program simulates for any potential combination of tally sheets, it's not possible to manually handle those cases, so I simply chose to do the same random precinct procedure, except on the whole tree of non-projected tally sheets.) 
 
-```markdown
-Syntax highlighted code block
+All the real vote totals are taken from the final cómputo spreadsheet, which is available here:
 
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/futurebum/boliviasims/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+https://computo.oep.org.bo/PubResul/acta.2019.10.25.21.09.30.xlsx
