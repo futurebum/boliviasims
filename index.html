@@ -472,13 +472,13 @@ let do_sims = function(sims_headers, sims_actas) {
 	}
 	
 	let button = document.getElementById("project_button");
-	button.style.color = "red";
+	button.style.color = "green";
 	button.innerHTML = "Projection "+(sims_arr.length)+" of "+(sims_arr.length)+" completed.";
 };
 
 // starts the whole process.
 document.getElementById("project_button").onclick = function() {
-	this.style.color = "green";
+	this.style.color = "red";
 
 	// load actas if not already loaded.
 	let sims_headers = saved_headers;
