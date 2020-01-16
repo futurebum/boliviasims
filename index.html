@@ -31,7 +31,7 @@
 <div>
 <label class="label_class">Simulations:&#9;</label>
 <span class="input_class">
-<label class="label_class">Count:&nbsp;</label><input type="text" id="sims_num_input" maxlength="6" value="1" style="text-align-last: center;"/>
+<label class="label_class">Count:&nbsp;</label><input type="text" id="sims_num_input" maxlength="6" value="5" style="text-align-last: center;"/>
 <label class="label_class">&nbsp;&nbsp;&nbsp;Type:&nbsp;</label>
 <label><input type="radio" name="sim_type" id="partial_sim">Partial</label>
 <label><input type="radio" name="sim_type" id="full_sim" checked>Full</label>
@@ -395,7 +395,8 @@ let do_sims = function(sims_headers, sims_actas) {
 		cell.innerHTML = "Turnout";
 		table_headers.append(cell);
 		cell = document.createElement("td");
-		let turnout = 100.0 * (emitidos / votes[vote_headers.indexOf('Inscritos')]);
+		let inscritos = votes[vote_headers.indexOf('Inscritos')];
+		let turnout = (inscritos > 0 ? 100.0 * (emitidos / inscritos) : 0);
 		cell.innerHTML = turnout.toFixed(2) + '%';
 		table_votes.append(cell);
 		cell = document.createElement("td");
