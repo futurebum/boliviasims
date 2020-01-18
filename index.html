@@ -8,55 +8,62 @@
 .radio_label {
 
 }
+.hidden_opts {
+	display: none;
+}
+.opt_row {
+	margin-top: 2px;
+}
 </style>
 </head>
 <! –– TODO:
+	REUSE DOM ELEMENTS. ALSO, MANAGE MEMORY BETTER? FF GC SUCKS, MAN. GOTTA FIND A WAY TO GET IT TO GC OLD DOM ELEMENTS.
 	1. Put pre-defined acta selections in some external resource that gets loaded as needed.
-	2. Use worker threads (fake multi-threading) and update on progress.
-	3. Make the process more efficient by saving data from repeated procedures.
+	2. Allow for acta groups to be mixed and matched.
+	3. Use worker threads (fake multi-threading) and update on progress.
 	4. Make the UI a bit less awful? Ha!
 ––>
 <body>
-<center><div id="options_div" style="border-style: solid; width: 650px; align-content: center; display: grid; padding-bottom: 5px; padding-right: 5px; padding-left: 5px; padding-top: 5px;">
+<center><div id="options_div" style="border-style: solid; max-width: 60%; align-content: center; display: grid; padding-bottom: 5px; padding-right: 5px; padding-left: 5px; padding-top: 5px; background-color: whitesmoke;">
+<font size=2>(bugs, comments, criticism to <a href="https://twitter.com/futurebum">@futurebum</a>. vote totals: <a href="https://computo.oep.org.bo/PubResul/acta.2019.10.25.21.09.30.xlsx">here</a>. readme: <a href="https://github.com/futurebum/boliviasims/blob/master/README.md">here</a>.)</font>
 
-<div id="proj_div">
+<div id="proj_div" style="margin-top: 5px;">
 <label class="opt_label">Actas to Simulate:&#9;</label>
 <span id="proj_select_span" style="text-align-last: center;"></span>
 </div>
 
-<div id="custom_div" style="display: none;">
+<div id="custom_div" class="opt_row" style="display: none;">
 <label class="opt_label">Actas to Simulate (Delimiters: commas or whitespace):&#9;</label><input type="text" id="custom_input"/>
 </div>
 
-<div>
+<div class="opt_row">
 <label class="opt_label" style="align-content: center;">Simulations:&#9;</label>
-<input type="text" id="sims_num_input" maxlength="6" value="10" style="text-align-last: center;  width: 60px;"/>
+<input type="text" id="sims_num_input" maxlength="6" value="10" style="text-align-last: center;  max-width: 60px;"/>
 <span>
-<label class="opt_label">&nbsp;&nbsp;&nbsp;Actas to Count:</label>
-<label class="radio_label"><input type="radio" name="sim_type" id="type_only_sim">Only Simulated Actas</label>
-<label class="radio_label" style="display: none;"><input type="radio" name="sim_type" id="type_only_unsim">Only Non-Simulated</label> <!-- Might be confusing, so I'll leave it out. -->
-<label class="radio_label"><input type="radio" name="sim_type" id="type_all_actas" checked>All Actas</label>
+<label class="opt_label">&nbsp;&nbsp;&nbsp;Actas Counted in Totals:</label>
+<label class="radio_label"><input type="radio" name="sim_type" id="type_only_sim">Only Simulated</label>
+<span class="hidden_opts"><label class="radio_label"><input type="radio" name="sim_type" id="type_only_unsim">Only Non-Simulated [ignore]</label></span>
+<label class="radio_label"><input type="radio" name="sim_type" id="type_all_actas" checked>All (Simulated + Unsimulated)</label>
 </span>
 </div>
 
-<div style="display: none;"> <! -- Not sure if these options would be confusing. Going to keep them a secret for now. -->
-<label class="opt_label" style="align-content: center;">Match Level:&#9;</label>
+<div class="opt_row">
+<label class="opt_label" style="align-content: center;">Geographic Precision:&#9;</label>
 <span id="specific_select_span" style="text-align-last: center;"></span>
 <span>
-<label class="opt_label">&nbsp;&nbsp;&nbsp;Imputation Level:&nbsp;</label>
+<label class="opt_label">&nbsp;&nbsp;&nbsp;Imputation By:&nbsp;</label>
 <label class="radio_label"><input type="radio" name="specific_type" id="imp_tally_sheet" checked>Acta</label>
 <label class="radio_label"><input type="radio" name="specific_type" id="imp_precinct">Recinto</label>
 </span>
 </div>
 
-<button id="project_button" type="button">Start Simulations</button>
-</div></center>
+<button id="project_button" class="opt_row" type="button">Start Simulations</button>
+</div>
 
-<div id="results_div"></div>
+<div id="results_div"></div></center>
 
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip-utils/0.1.0/jszip-utils.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.2.2/jszip.min.js"></script>
-
 <script>
 'use strict';
 var thirty_seven_argentina_actas = [1022, 1025, 1034, 1090, 1153, 1157, 1164, 1170, 1213, 1222, 1223, 1226, 1229, 1232, 1244, 1253, 1268, 1330, 1338, 1347, 1424, 1430, 1434, 1439, 1442, 1447, 1449, 1450, 1467, 1468, 1556, 1580, 1584, 1614, 1662, 1663, 1671];
@@ -67,9 +74,10 @@ var post_suspension_actas = in_trep_but_after_suspension.concat(in_computo_but_n
 var last_five_pct_computo = [10172, 10288, 10455, 10777, 10787, 10791, 10803, 10806, 10814, 10840, 10848, 10863, 10867, 10873, 10883, 10893, 10939, 10944, 10970, 10972, 10994, 10995, 10996, 11005, 11008, 11029, 11042, 11066, 11067, 11092, 11093, 11094, 11095, 11096, 11097, 11098, 11099, 11100, 11101, 11102, 11103, 11104, 11105, 11106, 11107, 11108, 11109, 11110, 11111, 11112, 11113, 11114, 11115, 11116, 11117, 11118, 11119, 11120, 11121, 11122, 11123, 11124, 11125, 11126, 11127, 11128, 11129, 11130, 11131, 11132, 11133, 11134, 11135, 11136, 11137, 11138, 11139, 11140, 11141, 11142, 11143, 11144, 11145, 11146, 11147, 11148, 11156, 11167, 11185, 11207, 11211, 11218, 11227, 11228, 11229, 11230, 11231, 11232, 11233, 11234, 11235, 11236, 11237, 11238, 11239, 11240, 11241, 11242, 11243, 11244, 11245, 11246, 11247, 11248, 11249, 11250, 11251, 11252, 11253, 11254, 11255, 11256, 11258, 11259, 11260, 11261, 11262, 11263, 11264, 11265, 11266, 11267, 11268, 11269, 11270, 11271, 11272, 11273, 11274, 11275, 11276, 11277, 11278, 11279, 11280, 11281, 11282, 11283, 11284, 11285, 11286, 11287, 11288, 11289, 11290, 11291, 11292, 11293, 11294, 11295, 11296, 11297, 11298, 11299, 11300, 11301, 11302, 11303, 11304, 11305, 11306, 11307, 11308, 11309, 11310, 11311, 11312, 11313, 11314, 11315, 11316, 11317, 11318, 11319, 11320, 11321, 11322, 11323, 11324, 11325, 11326, 11327, 11328, 11329, 11330, 11331, 11332, 11333, 11334, 11335, 11336, 11337, 11338, 11340, 11341, 11342, 11343, 11344, 11345, 11346, 11348, 11349, 11350, 11351, 11353, 11354, 11355, 11356, 11357, 11358, 11359, 11360, 11361, 11362, 11363, 11366, 11367, 11370, 11371, 11373, 11374, 11375, 11376, 11377, 11378, 11379, 11380, 11381, 11382, 11383, 11384, 11385, 11386, 11388, 11389, 11390, 11391, 11392, 11393, 11394, 11395, 11396, 11397, 11398, 11399, 11400, 11401, 11402, 11403, 11404, 11405, 11406, 11407, 11408, 11409, 11410, 11411, 11412, 11413, 11414, 11415, 11416, 11418, 11419, 11426, 11438, 11442, 11464, 11492, 11516, 11517, 11522, 11527, 11528, 11529, 11531, 11532, 11533, 11534, 11535, 11536, 11537, 11538, 11539, 11540, 11541, 11542, 11543, 11544, 11545, 11546, 11547, 11548, 11549, 11550, 11551, 11552, 11553, 11554, 11555, 11556, 11557, 11558, 11559, 11560, 11561, 11562, 11563, 11564, 11565, 11566, 11567, 11568, 11569, 11570, 11571, 11572, 11573, 11574, 11575, 11576, 11577, 11578, 11579, 11580, 11581, 11582, 11583, 11584, 11585, 11586, 11587, 11588, 11589, 11590, 11591, 11592, 11593, 11594, 11595, 11596, 11597, 11598, 11599, 11600, 11601, 11602, 11603, 11604, 11605, 11606, 11607, 11608, 11616, 11618, 11619, 11620, 11621, 11622, 11623, 11624, 11625, 11626, 11627, 11628, 11629, 11630, 11631, 11632, 11633, 11634, 11635, 11636, 11637, 11638, 11639, 11640, 11641, 11642, 11643, 11644, 11645, 11646, 11647, 11648, 11649, 11650, 11651, 11652, 11653, 11654, 11655, 11656, 11657, 11658, 11659, 11660, 11661, 11662, 11663, 11664, 11665, 11666, 11667, 11668, 11669, 11670, 11671, 11672, 11673, 11674, 11675, 11676, 11677, 11678, 11679, 11680, 11681, 11682, 11683, 11684, 11685, 11686, 11687, 11688, 11689, 11690, 11691, 11692, 11693, 11694, 11695, 11698, 11729, 11730, 11731, 11732, 11733, 11734, 11735, 11736, 11737, 11738, 11739, 11740, 11741, 11742, 11743, 11744, 11745, 11746, 11747, 11748, 11749, 11750, 11751, 11752, 11753, 11754, 11755, 11756, 11757, 11758, 11759, 11760, 11761, 11762, 11763, 11764, 11765, 11766, 11767, 11768, 11769, 11770, 11771, 11772, 11773, 11774, 11775, 11776, 11777, 11778, 11779, 11780, 11781, 11782, 11783, 11784, 11785, 11786, 11787, 11788, 11789, 11791, 11792, 11793, 11794, 11795, 11796, 11797, 11798, 11799, 11800, 11801, 11802, 11803, 11804, 11805, 11806, 11807, 11808, 11809, 11810, 11811, 11812, 11813, 11814, 11815, 11816, 11817, 11818, 11819, 11820, 11821, 11822, 11823, 11824, 11825, 11826, 11827, 11828, 20015, 20070, 20116, 20130, 20157, 20161, 20293, 20296, 20318, 20359, 20380, 20490, 20543, 20568, 20592, 20595, 20596, 20597, 20620, 20729, 20780, 21002, 21059, 21127, 21143, 21145, 21162, 21188, 21189, 21260, 21262, 21375, 21376, 21403, 21415, 21427, 21512, 21524, 21608, 21695, 21702, 21704, 21727, 22110, 22144, 22178, 22253, 22256, 22267, 22281, 22306, 22466, 22481, 22496, 22502, 22503, 22579, 22592, 22593, 22595, 22596, 22599, 22600, 22631, 22636, 22723, 22728, 22746, 22989, 22990, 23081, 23088, 23090, 23091, 23094, 23095, 23102, 23103, 23125, 23139, 23140, 23143, 23241, 23289, 23308, 23315, 23351, 23375, 23492, 23498, 23499, 23514, 23527, 23530, 23533, 23538, 23541, 23553, 23610, 23654, 23690, 23722, 23731, 23791, 23798, 23799, 23832, 23898, 23924, 23942, 23950, 24062, 24099, 24110, 24194, 24202, 24243, 24278, 24299, 24304, 24342, 24412, 24421, 24422, 24437, 24446, 24456, 24465, 24509, 24516, 24517, 24558, 24623, 24627, 24631, 24639, 24668, 24854, 24864, 24867, 24884, 24886, 24919, 24920, 24928, 24930, 24943, 24968, 24970, 25060, 25067, 25129, 25154, 25170, 25213, 25214, 25246, 25323, 25352, 25411, 25493, 25498, 25500, 25501, 25503, 25534, 25569, 25570, 25571, 25575, 25580, 25586, 25599, 25601, 25602, 25605, 25632, 25641, 25652, 25655, 25667, 25681, 25694, 25701, 25706, 25707, 25814, 25850, 25857, 25867, 25912, 25913, 25968, 25996, 25997, 26008, 26029, 26031, 26034, 26049, 26050, 26052, 26056, 26068, 26080, 26100, 26148, 26150, 26159, 26185, 26197, 26272, 26278, 26339, 26340, 26382, 26403, 26427, 26429, 26462, 26482, 26486, 26496, 26515, 26527, 26528, 26539, 26559, 26560, 26562, 26576, 26585, 26590, 26655, 26747, 26773, 26825, 26830, 26852, 26855, 26857, 26871, 26876, 26942, 26944, 26950, 26956, 26963, 26978, 26980, 26988, 27014, 27022, 27032, 27039, 27052, 27102, 27118, 27123, 27142, 27145, 27154, 27184, 27188, 27207, 27214, 27273, 27293, 27296, 27298, 27304, 27305, 27309, 27319, 27342, 27345, 27348, 27362, 27375, 27385, 27419, 27422, 27430, 27435, 27447, 27454, 27463, 27472, 27475, 27480, 27485, 27489, 27493, 27525, 27527, 27573, 27577, 27591, 27602, 27613, 27620, 27629, 27632, 27634, 27647, 27649, 27652, 27656, 27669, 27671, 27676, 27685, 27689, 27694, 27702, 27715, 27722, 27730, 27746, 27749, 27762, 27769, 27772, 27776, 27777, 27778, 27793, 27800, 27802, 27805, 27809, 27819, 27823, 27826, 27828, 27834, 27838, 27844, 27852, 27861, 27871, 27876, 27894, 27953, 27955, 27969, 27976, 27978, 27982, 28008, 28018, 28039, 28040, 28042, 28044, 28060, 28062, 28063, 28067, 28070, 28071, 28072, 28075, 28079, 28104, 28115, 28118, 28141, 28152, 28173, 28177, 28219, 28222, 28239, 28258, 28263, 28285, 28286, 28308, 28314, 28316, 28342, 28374, 28384, 28508, 28509, 28510, 28516, 28520, 28531, 28555, 28557, 28558, 28559, 28560, 28561, 28562, 28563, 28564, 28565, 28566, 28567, 28568, 28569, 28570, 28571, 28572, 28573, 28574, 28575, 28576, 28577, 28578, 28579, 28580, 28581, 28583, 28584, 28585, 28586, 28587, 28588, 28589, 28590, 28591, 28592, 28593, 28594, 28595, 28596, 28597, 28598, 28599, 28600, 28601, 28602, 28603, 28604, 28605, 28606, 28607, 28608, 28609, 28610, 28645, 28646, 28649, 28651, 28661, 28710, 28725, 28737, 28739, 28740, 28743, 28744, 28746, 28762, 28770, 28784, 28788, 28805, 28816, 28824, 28849, 28861, 28868, 28872, 28879, 28881, 28883, 28892, 28896, 28897, 28900, 28901, 28902, 28903, 28904, 28905, 28906, 28907, 28908, 28909, 28910, 28911, 28912, 28913, 28914, 28915, 28916, 28917, 28918, 28919, 28920, 28921, 28922, 28923, 28924, 28925, 28927, 28928, 28929, 28930, 28931, 28932, 28933, 28934, 28935, 28936, 28937, 28938, 28939, 28940, 28941, 28942, 28943, 28944, 28945, 28946, 28947, 28948, 28949, 28950, 28951, 28952, 28953, 28954, 28955, 28956, 28957, 28958, 28959, 28960, 28961, 28962, 28963, 28964, 28965, 28966, 28967, 28968, 28969, 28970, 28971, 28972, 28973, 28974, 28975, 28976, 28977, 28978, 28979, 28980, 28981, 28982, 28983, 28984, 28985, 28986, 28987, 28988, 50019, 50020, 50021, 50023, 50031, 50032, 50051, 50056, 50091, 50106, 50112, 50148, 50214, 50215, 50285, 50341, 50357, 50382, 50417, 50449, 50457, 50477, 50508, 50511, 50515, 50529, 50535, 50624, 50643, 50662, 50678, 50691, 50695, 50700, 50709, 50723, 50724, 50725, 50727, 50728, 50732, 50742, 50767, 50786, 50808, 50815, 50818, 50820, 50822, 50831, 50832, 50840, 50841, 50842, 50843, 50844, 50845, 50846, 50847, 50848, 50849, 50850, 50851, 50852, 50853, 50854, 50856, 50857, 50882, 50896, 50957, 50977, 50981, 50990, 51002, 51004, 51005, 51006, 51007, 51008, 51009, 51010, 51011, 51012, 51013, 51014, 51015, 51016, 51017, 51018, 51019, 51020, 51021, 51022, 51023, 51024, 51025, 51026, 51027, 51028, 51029, 51030, 51036, 51037, 51040, 51041, 51042, 51043, 51044, 51051, 51052, 51053, 51054, 51055, 51056, 51057, 51072, 51074, 51085, 51086, 51090, 51091, 51092, 51093, 51094, 51095, 51096, 51097, 51098, 51099, 51100, 51101, 51102, 51103, 51104, 51105, 51106, 51107, 51108, 51109, 51110, 51111, 51112, 51113, 51114, 51115, 51116, 51117, 51118, 51119, 51120, 51121, 51122, 51123, 51124, 51125, 51126, 51127, 51128, 51129, 51130, 51131, 51132, 51133, 51134, 51135, 51136, 51137, 51138, 51139, 51140, 51141, 51142, 51143, 51144, 51145, 51160, 51164, 51166, 51167, 51173, 51175, 51179, 51180, 51181, 51192, 51193, 51194, 51203, 51211, 51212, 51213, 51216, 51238, 51244, 51262, 51263, 51264, 51265, 51266, 51267, 51268, 51269, 51270, 51271, 51272, 51273, 51274, 51275, 51276, 51277, 51278, 51279, 51280, 51283, 51284, 51285, 51287, 51288, 51289, 51294, 51296, 51299, 51300, 51307, 51308, 51310, 51311, 51315, 51316, 51317, 51335, 51337, 51344, 51346, 51347, 51348, 51349, 51350, 51351, 51352, 51353, 51354, 51355, 51356, 51357, 51358, 51359, 51360, 51361, 51362, 51363, 51364, 51365, 51366, 51367, 51368, 51369, 51370, 51371, 51372, 51373, 51374, 51375, 51376, 51377, 51378, 51379, 51380, 51381, 51382, 51383, 51384, 51385, 51386, 51387, 51388, 51389, 51390, 51391, 51392, 51393, 51394, 51395, 51396, 51397, 51398, 51399, 51400, 51401, 51402, 51403, 51404, 51405, 51406, 51407, 51408, 51409, 51410, 51411, 51412, 51413, 51414, 51415, 51416, 51417, 51418, 51419, 51420, 51421, 51422, 51423, 51424, 51425, 51426, 51427, 51428, 51429, 51430, 51431, 51432, 51433, 51434, 51435, 51436, 51441, 51444, 51451, 51452, 51481, 51497, 51499, 51500, 51536, 51540, 51541, 51544, 51546, 51547, 51548, 51549, 51550, 51555, 51556, 51557, 51558, 51559, 51560, 51561, 51562, 51563, 51564, 51567, 51568, 51569, 51570, 51573, 51583, 51584, 51585, 51586, 51587, 51590, 51591, 51592, 51596, 51597, 51598, 51599, 51602, 51633, 51658, 51673, 51679, 51687, 51690, 51699, 51704, 51705, 51706, 51707, 51708, 51709, 51710, 51711, 51712, 51713, 51714, 51715, 51716, 51718, 51719, 51720, 51729, 51730, 51731, 51733, 51736, 51737, 51739, 51740, 51741, 51742, 51744, 51745, 51746, 51747, 51749, 51750, 51751, 51752, 51753, 51754, 51755, 51756, 51757, 51758, 51759, 51760, 51761, 51762, 51763, 51764, 51765, 51766, 51767, 51768, 51769, 51770, 51771, 51772, 51773, 51774, 51775, 51776, 51777, 51778, 51779, 51780, 51781, 51782, 51785, 51789, 51797, 51805, 51824, 51828, 51829, 51830, 51831, 51838, 51840, 51841, 51842, 51843, 51844, 51845, 51846, 51847, 51848, 51849, 51850, 51851, 51852, 51853, 51854, 51855, 51856, 51857, 51858, 51859, 51860, 51861, 51862, 51863, 51864, 51870, 51872, 51873, 51874, 51875, 51878, 51879, 51880, 51881, 51882, 51883, 51884, 51885, 51886, 51887, 51888, 51889, 51890, 51891, 51892, 51893, 51897, 51901, 51902, 51903, 51904, 51909, 51910, 51911, 51928, 51952, 51958, 51996, 52045, 52049, 52054, 52078, 52082, 52085, 52088, 52106, 52131, 52134, 52136, 52140, 52141, 52142, 52143, 52144, 52145, 52146, 52147, 52148, 52149, 52150, 52151, 52152, 52153, 52154, 52155, 52156, 52157, 52158, 52159, 52160, 52161, 52162, 52163, 52164, 52165, 52201, 52212, 52221, 52223, 52225, 52228, 52243, 52257, 52273, 52274, 52279, 52291, 52305, 52307, 52308, 52309, 52310, 52313, 52314, 52315, 52331, 80622, 80935, 80936, 80937, 81081, 81136, 81138, 81146, 81148, 81150, 81151, 81152, 81153, 81158, 81159, 81160, 81163];
 
 const ID_HEADER = 'Número Mesa';
-const REGISTERED_VOTERS_HEADER = 'Inscritos';
 const VOTE_HEADERS = ['Inscritos','CC','FPV','MTS','UCS','MAS - IPSP','21F','PDC','MNR','PAN-BOL','Blancos','Nulos'];
-const GEO_HEADERS = ['País', 'Departamento', 'Provincia', 'Municipio', 'Localidad', 'Recinto'];
+const REGISTERED_VOTERS_HEADER = 'Inscritos';
+const INVALID_VOTE_HEADERS = ['Blancos', 'Nulos'];
+const GEO_HEADERS = ['País', 'Departamento', 'Provincia', 'Municipio', 'Localidad', 'Recinto']; // [less specific ... more specific]
 var saved_actas = {};
 var saved_headers = {};
 
@@ -84,12 +92,13 @@ const PROJ_CHOICES = {
 	"Custom": []
 };
 
-// enum for the different ways to count them.
+// enums for the different ways to count them.
 const TYPE_ONLY_UNSIM_ACTAS = 0;
 const TYPE_ONLY_SIM_ACTAS = 1;
 const TYPE_ALL_ACTAS = 2;
 var current_sim_type = TYPE_ALL_ACTAS; // hold the value.
 
+// enums for the different ways to impute them.
 const IMP_BY_TALLY_SHEET = 0;
 const IMP_BY_PRECINCT = 1;
 var imputation_level = IMP_BY_TALLY_SHEET;
@@ -113,7 +122,7 @@ var imputation_level = IMP_BY_TALLY_SHEET;
 	
 	// make custom text field visible.
 	proj_select.onchange = function() {
-		document.getElementById("custom_div").style = (this.value === 'Custom' ? "" : "display: none;");
+		document.getElementById("custom_div").style = (this.value === 'Custom' ? " (Most Precise)" : "display: none;");
 	};
 	
 	// create and populate match specificity box.
@@ -127,7 +136,7 @@ var imputation_level = IMP_BY_TALLY_SHEET;
 	specific_select.append(option);
 	for (let i=0; i<GEO_HEADERS.length; i++) {
 		option = document.createElement("option");
-		option.innerHTML = GEO_HEADERS[i] + (i < GEO_HEADERS.length - 1 ? " or Better" : " Only");
+		option.innerHTML = "Only " + GEO_HEADERS[i] + (i < GEO_HEADERS.length - 1 ? " Matches or Better" : " Matches (Most Precise)");
 		option.value = i;
 		specific_select.append(option);
 	}
@@ -150,7 +159,7 @@ var imputation_level = IMP_BY_TALLY_SHEET;
 }
 
 function parseActas(csv_to_parse) {
-	// NOTE: REDO THIS TO PROCESS STREAM INSTEAD OF STR?
+	// NOTE: REDO THIS TO PROCESS BYTESTREAM INSTEAD OF STR?
 	if (csv_to_parse.charAt(0) === '\ufeff') { csv_to_parse = csv_to_parse.substr(1); } // ignore bom.
 	let first_break = csv_to_parse.indexOf('\n');
 	let header_str = csv_to_parse.substr(0, first_break - (csv_to_parse.charAt(first_break - 1) === '\r' ? 1 : 0));
@@ -232,11 +241,10 @@ function parseActas(csv_to_parse) {
 		}
 	}
 	
-	saved_headers = headers;
-	saved_actas = actas;
+	return [headers, actas];
 }
 	
-function processActas() {
+function loadActas(callback) {
 	if (Object.keys(saved_actas).length === 0) {
 		const url = "https://raw.githubusercontent.com/futurebum/boliviasims/master/final_computo.zip";
 		JSZipUtils.getBinaryContent(url, function(err, data) {
@@ -246,7 +254,9 @@ function processActas() {
 
 			JSZip.loadAsync(data).then(function (zip) {
 				zip.file('final_computo.csv').async('string').then(function (response) {
-					parseActas(response);
+					let arr = parseActas(response);
+					saved_headers = arr[0];
+					saved_actas = arr[1];
 					do_sims();
 				});
 			});
@@ -257,7 +267,7 @@ function processActas() {
 	}
 }
 
-// Firefox was effectively creating a memory leak by refusing to GC old table nodes. Maybe this will help.
+// Firefox was effectively creating a memory leak by refusing to GC old table nodes which it held some old reference to. Maybe this will help.
 function destroyChildren(node) {
 	while (node.lastChild) { node.removeChild(destroyChildren(node.lastChild)); }
 	return node;
@@ -285,36 +295,38 @@ function do_sims() {
 
 	// create a list of the ones i want to project.
 	let actas_to_project = {};
-	let proj_choice = document.getElementById("proj_select").value;
-	if (proj_choice !== 'Custom') {
-		let proj_arr = PROJ_CHOICES[proj_choice];
-		//console.debug("projection actas => " +proj_arr);
-		for (let id of proj_arr) {
-			//console.debug("setting for: "+id);
-			actas_to_project[id] = null; // not sure what i'm doing with the value...
+	{
+		let proj_choice = document.getElementById("proj_select").value;
+		if (proj_choice !== 'Custom') {
+			let proj_arr = PROJ_CHOICES[proj_choice];
+			//console.debug("projection actas => " +proj_arr);
+			for (let id of proj_arr) {
+				//console.debug("setting for: "+id);
+				actas_to_project[id] = null; // not sure what i'm doing with the value...
+			}
 		}
-	}
-	else { // is custom, so parse text field.
-		let custom_text = document.getElementById("custom_input").value;
-		let custom_split = custom_text.split(/[, \s]+/);
-		for (let i=0; i<custom_split.length; i++) {
-			let acta_to_project = custom_split[i];
-			if (acta_to_project.charAt(0) === '#') { acta_to_project = acta_to_project.substr(1); }
-			if (acta_to_project.length === 5 || acta_to_project.length === 4) {
-				let isValid = true;
-				let j = 0;
-				do {
-					let custom_char = acta_to_project.charAt(j);
-					isValid = (custom_char >= '0' && custom_char <= '9');
-				} while (isValid && ++j < acta_to_project.length)
-			
-				if (isValid) {
-					actas_to_project[acta_to_project] = null; // not sure what i'm doing with the value...
-				}
-				else {
-					console.error("Bad custom acta_to_project value ignored: '"+acta_to_project+"'");
-				}
+		else { // is custom, so parse text field.
+			let custom_text = document.getElementById("custom_input").value;
+			let custom_split = custom_text.split(/[, \s]+/);
+			for (let i=0; i<custom_split.length; i++) {
+				let acta_to_project = custom_split[i];
+				if (acta_to_project.charAt(0) === '#') { acta_to_project = acta_to_project.substr(1); }
+				if (acta_to_project.length === 5 || acta_to_project.length === 4) {
+					let isValid = true;
+					let j = 0;
+					do {
+						let custom_char = acta_to_project.charAt(j);
+						isValid = (custom_char >= '0' && custom_char <= '9');
+					} while (isValid && ++j < acta_to_project.length)
 				
+					if (isValid) {
+						actas_to_project[acta_to_project] = null; // not sure what i'm doing with the value...
+					}
+					else {
+						console.error("Bad custom acta_to_project value ignored: '"+acta_to_project+"'");
+					}
+					
+				}
 			}
 		}
 	}
@@ -338,6 +350,7 @@ function do_sims() {
 	};
 	
 	// ok, time to do the projection
+	let num_real_actas = 0;
 	let base_totals = []; // only non-projected actas.
 	let real_totals = []; // recreating official vote total.
 	for(let i=0; i<VOTE_HEADERS.length; i++) { real_totals[i] = 0; base_totals[i] = 0; }
@@ -379,8 +392,8 @@ function do_sims() {
 		// only sims:             no               no               no             yes
 		// all:                   yes              no               yes            yes
 		
-		let test_val = (saved_sim_type === TYPE_ALL_ACTAS || (saved_sim_type === TYPE_ONLY_UNSIM_ACTAS && acta_to_project === undefined) || (saved_sim_type === TYPE_ONLY_SIM_ACTAS && acta_to_project !== undefined));
-		if (test_val) {
+		if (saved_sim_type === TYPE_ALL_ACTAS || (saved_sim_type === TYPE_ONLY_UNSIM_ACTAS && acta_to_project === undefined) || (saved_sim_type === TYPE_ONLY_SIM_ACTAS && acta_to_project !== undefined)) {
+			++num_real_actas;
 			for (let j=0; j<VOTE_HEADERS.length; j++) {
 				real_totals[j] += get_acta_data(mesa_number, VOTE_HEADERS[j]);
 			}
@@ -390,78 +403,80 @@ function do_sims() {
 	//console.debug("base totals => " + base_totals);
 	
 	// do some pre-processing to weed out actas that don't have specific enough matches.
-	if (least_specific_match_index >= 0) {
-		let projected_actas_copy = {};
-		Object.assign(projected_actas_copy, actas_to_project);
-		for (const mesa_number in projected_actas_copy) {
-			let last_map = acta_map;
-			let current_map;
-			for (let i=0; i<least_specific_match_index; i++) {
-				let geo_id = get_acta_data(mesa_number, GEO_HEADERS[i]);
-				current_map = last_map[geo_id];
-				if (current_map === undefined) {
+	let traversal_lookup = {}; // lookup hash. key: mesa_number. value: object with last matching map and last matching geo subdivision level.
+	let projected_actas_copy = {};
+	let excluded = [];
+	Object.assign(projected_actas_copy, actas_to_project);
+	match_search: for (const mesa_number in projected_actas_copy) {
+		let last_map = acta_map;
+		let current_map;
+		for (let i=0; i<GEO_HEADERS.length; i++) { // least_specific_match_index
+			let geo_id = get_acta_data(mesa_number, GEO_HEADERS[i]);
+			current_map = last_map[geo_id];
+			if (current_map === undefined) {
+				if (i <= least_specific_match_index) {
+					excluded.push(mesa_number);
 					delete actas_to_project[mesa_number];
-					if (saved_sim_type === TYPE_ALL_ACTAS || saved_sim_type === TYPE_ONLY_SIM_ACTAS) {
-						for (let j=0; j<VOTE_HEADERS.length; j++) {
-							real_totals[j] -= get_acta_data(mesa_number, VOTE_HEADERS[j]); // just the reverse of before, ha.
-						}
+					 // acta to-be-simulated but rejected for lack of match specificity.
+					// only sim: 	remove it from base_totals. if only_sim, remove from real too.
+					// only unsim:	never got added to anything, so don't adjust anything.
+					// all:			remove from base, but not from real.
+					switch (saved_sim_type) {
+						case TYPE_ALL_ACTAS:
+							// add to base, leave real alone.
+							for (let j=0; j<VOTE_HEADERS.length; j++) {
+								base_totals[j] += get_acta_data(mesa_number, VOTE_HEADERS[j]);
+							}
+							break;
+						case TYPE_ONLY_SIM_ACTAS:
+							// leave base alone, remove from real.
+							--num_real_actas;
+							for (let j=0; j<VOTE_HEADERS.length; j++) {
+								real_totals[j] -= get_acta_data(mesa_number, VOTE_HEADERS[j]);
+							}
+							break;
+						case TYPE_ONLY_UNSIM_ACTAS:
+							// do nothing
+						default:
 					}
-					break;
 				}
-
-				last_map = current_map;
+				else {
+					traversal_lookup[mesa_number] = {
+						geo_index: i,
+						map: last_map
+					};
+				}
+				
+				continue match_search;
 			}
+
+			last_map = current_map;
 		}
+		
+		traversal_lookup[mesa_number] = {
+			geo_index: GEO_HEADERS.length, // < basically, don't bother looking. found a recinto match.
+			map: last_map
+		};
 	}
 	
 	// SIMULATION.
-	let traversal_lookup = {}; // lookup hash. key: mesa_number. value: object with last matching map and last matching geo subdivision level.
 	let vote_totals_lookup = {}; // lookup hash. key: precinct_arr from acta_map. value: vote table for vote totals at that precinct.
-	let do_simulation = function(base_votes, proj_actas) {
+	let do_simulation = function (base_votes, proj_actas) {
 		let votes = [];
 		for (let i=0; i<VOTE_HEADERS.length; i++) { votes[i] = base_votes[i]; } // init the vote counts.
 		let mesa_numbers = (Array.isArray(proj_actas) ? proj_actas : Object.keys(proj_actas)); // just in case i change it later, lol.
 		for (let i=0; i<mesa_numbers.length; i++) {
 			let mesa_number = mesa_numbers[i];
 			
-			// PREPARATION FOR TRAVERSAL
-			// init some values, look for ourselves in the lookup data to save effort later.
-			let last_map = acta_map;
-			let current_map;
-			let traversal_index = 0;
-			let start_random = false;
-			let lookup_data = traversal_lookup[mesa_number];
-			if (lookup_data !== undefined) {
-				traversal_index = lookup_data.geo_index;
-				last_map = lookup_data.map;				
-				start_random = true;
-			}
-			
-			// ACTUAL TRAVERSAL
+			// ACTUAL TRAVERSAL (already pre-computed non-random paths)
 			// traverse map as far as you can, then random once you can't any further.
 			// note: novel countries will get random actas/precinct from whole population of actas/precincts. (probably outside of bolivia, tho, since bolivia only one key at 'país' level, of course, and there's no weighting of the different decision paths.)
-			for (let j=traversal_index; j<GEO_HEADERS.length; j++) {
-				if (!start_random) {
-					let geo_id = get_acta_data(mesa_number, GEO_HEADERS[j]);
-					current_map = last_map[geo_id];
-					if (current_map === undefined) {
-						traversal_lookup[mesa_number] = {
-							geo_index: j,
-							map: last_map
-						};
-						start_random = true;
-						let rand_keys = Object.keys(last_map);
-						let rand_key = rand_keys[Math.floor(Math.random() * rand_keys.length)];
-						current_map = last_map[rand_key];
-					}
-				}
-				else {
-					let rand_keys = Object.keys(last_map);
-					let rand_key = rand_keys[Math.floor(Math.random() * rand_keys.length)];
-					current_map = last_map[rand_key];
-				}
-				
-				last_map = current_map;
+			let lookup_data = traversal_lookup[mesa_number];
+			let current_map = lookup_data.map;
+			for (let j=lookup_data.geo_index; j<GEO_HEADERS.length; j++) {
+				let rand_keys = Object.keys(current_map);
+				let rand_key = rand_keys[Math.floor(Math.random() * rand_keys.length)];
+				current_map = current_map[rand_key];
 			}
 			
 			// COUNT UP VOTES FOR IMPUTATION
@@ -493,7 +508,7 @@ function do_sims() {
 							imp_vote_table[j] += get_acta_data(precinct[k], VOTE_HEADERS[j]);
 						}
 					}
-					vote_totals_lookup[current_map] = imp_vote_table;
+					vote_totals_lookup[precinct] = imp_vote_table;
 				}
 			}
 			
@@ -508,9 +523,9 @@ function do_sims() {
 		return votes;
 	}
 	
-	let make_table = function(votes, title) {
+	let make_table = function(votes, title, num_actas) {
 		let table = document.createElement("table");
-		table.style.width = "100%";
+		table.style.width = '90%';
 		table.style.textAlign = 'center';
 		table.style.borderStyle = 'solid';
 		
@@ -539,13 +554,24 @@ function do_sims() {
 		let emitidos = 0;
 		let valid_votes = 0;
 		for (let i=0; i<votes.length; i++) {
-			if (VOTE_HEADERS[i] !== REGISTERED_VOTERS_HEADER /*&& VOTE_HEADERS[i] !== 'Votos Válidos'*/) {
+			if (VOTE_HEADERS[i] !== REGISTERED_VOTERS_HEADER) {
 				emitidos += votes[i];
-				if (VOTE_HEADERS[i] !== 'Blancos' && VOTE_HEADERS[i] !== 'Nulos') {
+				if (INVALID_VOTE_HEADERS.indexOf(VOTE_HEADERS[i]) < 0) {
 					valid_votes += votes[i];
 				}
 			}
 		}
+		
+		cell = document.createElement("th");
+		cell.innerHTML = "Actas";
+		table_headers.append(cell);
+		cell = document.createElement("td");
+		cell.innerHTML = num_actas;
+		table_votes.append(cell);
+		cell = document.createElement("td");
+		table_raw_pcts.append(cell);
+		cell = document.createElement("td");
+		table_vote_shares.append(cell);
 		
 		cell = document.createElement("th");
 		cell.innerHTML = "Turnout";
@@ -566,7 +592,7 @@ function do_sims() {
 			table_headers.append(table_header);
 			
 			let table_vote = document.createElement("td");
-			table_vote.innerHTML = votes[i].toFixed(2); // it should be fine at zeroooooo?
+			table_vote.innerHTML = Math.round(votes[i]); // it should be fine at zeroooooo?
 			table_votes.append(table_vote);
 			
 			if (VOTE_HEADERS[i] !== REGISTERED_VOTERS_HEADER) {
@@ -579,7 +605,7 @@ function do_sims() {
 				table_raw_pcts.append(document.createElement("td"));
 			}
 		
-			if (VOTE_HEADERS[i] !== REGISTERED_VOTERS_HEADER /*&& VOTE_HEADERS[i] !== 'Votos Válidos'*/ && VOTE_HEADERS[i] !== 'Blancos' && VOTE_HEADERS[i] !== 'Nulos') {
+			if (VOTE_HEADERS[i] !== REGISTERED_VOTERS_HEADER && INVALID_VOTE_HEADERS.indexOf(VOTE_HEADERS[i]) < 0) {
 				let table_vote_share = document.createElement("td");
 				let vote_share = (valid_votes > 0 ? (votes[i] / valid_votes) * 100.0 : 0);
 				table_vote_share.innerHTML = vote_share.toFixed(2) + '%';
@@ -598,9 +624,62 @@ function do_sims() {
 		return table;
 	};
 	
-	let basic_table = make_table(real_totals, 'Real Vote Totals');
 	let results_div = document.getElementById("results_div");
 	destroyChildren(results_div);
+	
+	if (excluded.length > 0) {
+		let excluded_div = document.createElement("div");
+		excluded_div.style.maxWidth = '100%';
+		let excluded_top_text = document.createElement("center");
+		excluded_top_text.innerHTML = ("<i>Number of Actas Unsimulated Due to Geographic Imprecision: " + excluded.length + " of " + (Object.keys(actas_to_project).length + excluded.length) + " actas.</i> ");
+		
+		let hidden_list = document.createElement("label");
+		hidden_list.style.display = 'none';
+		let hidden_list_str = "" + excluded[0];
+		for (let i=1; i<excluded.length; i++) {
+			hidden_list_str += (' ' + excluded[i]);
+		}
+		hidden_list.innerHTML = hidden_list_str;
+		
+		let copy_label = document.createElement("label");
+		copy_label.innerHTML = '(copy)';
+		copy_label.style.color = 'blue';
+		copy_label.onclick = function () {
+			let fake = document.createElement('input'); // have to create a fake input element to copy to clipboard. fuck, i hate javascript.
+			fake.type = 'text';
+			fake.value = hidden_list.innerHTML;
+			//fake.style.display = 'none'; // doesn't work with exec copy. fuck, i hate javascript.
+			fake.style.position = 'absolute';
+			fake.style.opacity = '0';
+			document.body.appendChild(fake);
+			fake.select();
+			document.execCommand('Copy');
+			document.body.removeChild(fake);
+		};
+		excluded_top_text.append(copy_label);
+		
+		let show_hide_label = document.createElement("label");
+		show_hide_label.innerHTML = '(show)';
+		show_hide_label.style.color = 'blue';
+		let show_str = "" + excluded[0];
+		show_hide_label.onclick = function () {
+			if (this.innerHTML === '(show)') {
+				hidden_list.style.display = 'inline';
+				this.innerHTML = '(hide)';
+			}
+			else {
+				hidden_list.style.display = 'none';
+				this.innerHTML = '(show)';
+			}
+		};
+		excluded_top_text.append(show_hide_label);
+		
+		excluded_div.append(excluded_top_text);
+		excluded_div.append(hidden_list);
+		results_div.append(excluded_div);
+	}
+	
+	let basic_table = make_table(real_totals, 'Real Vote Totals', num_real_actas);
 	results_div.append(basic_table);
 	
 	// do the sims.
@@ -618,10 +697,11 @@ function do_sims() {
 		
 		// do averages, then make tables for the sims and add them to the page.
 		let sims_avgs = [];
+		let num_sim_actas = (saved_sim_type === TYPE_ALL_ACTAS ? num_real_actas : Object.keys(actas_to_project).length);
 		for (let i=0; i<VOTE_HEADERS.length; i++) { sims_avgs[i] = (sims_totals[i] / num_sims); }
-		results_div.append(make_table(sims_avgs, "Average of All Simulations (" + (sims_arr.length) + ")"));
+		results_div.append(make_table(sims_avgs, "Average of All Simulations (" + (sims_arr.length) + ")", num_sim_actas));
 		for (let i=0; i<sims_arr.length; i++) {
-			results_div.append(make_table(sims_arr[i], "Simulation #" + (i + 1)));
+			results_div.append(make_table(sims_arr[i], "Simulation #" + (i + 1), num_sim_actas));
 		}
 	}
 	
@@ -629,17 +709,26 @@ function do_sims() {
 	button.style.color = "green";
 	button.innerHTML = "Simulation "+num_sims+" of "+num_sims+" completed.";	
 	
-	// giving firefox's inferior gc a hand.
+	// giving firefox's inferior gc a hand. doubt it matters.
 	traversal_lookup = null;
 	vote_totals_lookup = null;
 	actas_to_project = null;
 	acta_map = null;
+	do_simulation = null;
+	make_table = null;
+	get_acta_data = null;
+	projected_actas_copy = null;
 };
 
 // starts the whole process.
 document.getElementById("project_button").onclick = function() {
 	this.style.color = "red";
-	processActas();
+	if (Object.keys(saved_actas).length <= 0) {
+		loadActas(function() { do_sims(); });
+	}
+	else {
+		do_sims();
+	}
 }
 </script>
 </body>
