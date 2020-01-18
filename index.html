@@ -122,7 +122,7 @@ var imputation_level = IMP_BY_TALLY_SHEET;
 	
 	// make custom text field visible.
 	proj_select.onchange = function() {
-		document.getElementById("custom_div").style = (this.value === 'Custom' ? " (Most Precise)" : "display: none;");
+		document.getElementById("custom_div").style = (this.value === 'Custom' ? "" : "display: none;");
 	};
 	
 	// create and populate match specificity box.
@@ -240,6 +240,9 @@ function parseActas(csv_to_parse) {
 			is_num = (is_num && is_number(cc));    // is it a number?
 		}
 	}
+	
+	// who knows. hate the gc.
+	str = null;
 	
 	return [headers, actas];
 }
@@ -710,14 +713,21 @@ function do_sims() {
 	button.innerHTML = "Simulation "+num_sims+" of "+num_sims+" completed.";	
 	
 	// giving firefox's inferior gc a hand. doubt it matters.
+	base_totals = null;
+	real_totals = null;
+	acta_keys = null;
+	acta_map = null;
+	excluded = null;
 	traversal_lookup = null;
 	vote_totals_lookup = null;
 	actas_to_project = null;
-	acta_map = null;
 	do_simulation = null;
 	make_table = null;
 	get_acta_data = null;
 	projected_actas_copy = null;
+	button = null;
+	basic_table = null;
+	results_div = null;
 };
 
 // starts the whole process.
