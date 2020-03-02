@@ -4,7 +4,7 @@
 
 Uses the naive 'random' method described here:
 
-http://cepr.net/publications/reports/bolivia-elections-2019-11
+https://www.cepr.net/report/bolivia-elections-2019-11/
 
 However, any arbitrary grouping of tally sheets can be simulated. I also provide a few pre-defined groups of tally sheets that have captured particular interest in the reports about the election.
 
