@@ -2,7 +2,7 @@
 
 <h4>Method</h4>
 
-Uses the method described here:
+Uses the naive 'random' method described here:
 
 http://cepr.net/publications/reports/bolivia-elections-2019-11
 
