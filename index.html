@@ -25,7 +25,7 @@
 ––>
 <body>
 <center><div id="options_div" style="border-style: solid; max-width: 60%; align-content: center; display: grid; padding-bottom: 5px; padding-right: 5px; padding-left: 5px; padding-top: 5px; background-color: whitesmoke;">
-<font size=2>(bugs, comments, criticism to <a href="https://twitter.com/futurebum">@futurebum</a>. vote totals: <a href="https://computo.oep.org.bo/PubResul/acta.2019.10.25.21.09.30.xlsx">here</a>. readme: <a href="https://github.com/futurebum/boliviasims/blob/master/README.md">here</a>.)</font>
+<font size=2>(bugs, comments, criticism to <a href="https://twitter.com/futurebum">@futurebum</a>. vote totals: <s><a href="https://computo.oep.org.bo/PubResul/acta.2019.10.25.21.09.30.xlsx">here</a></s>. readme: <a href="https://github.com/futurebum/boliviasims/blob/master/README.md">here</a>.)</font>
 
 <div id="proj_div" style="margin-top: 5px;">
 <label class="opt_label">Actas to Simulate:&#9;</label>
@@ -89,16 +89,16 @@ var saved_headers = {};
 /// choices for different acta groups.
 const PROJ_CHOICES = {
 	"All Actas Verified After TREP Suspension (Includes Cómputo Actas)": post_suspension_actas,
-	"All TREP Actas Verified After Last Pre-TREP Suspension Sheet (19:40:57 on 20th)": in_trep_but_after_suspension,
-	"All TREP Actas Verified After TREP Came Back On (10.21.18.29.53)": trep_after_return,
+	"All TREP Actas Verified After Last Pre-TREP Suspension Sheet (2019.10.20.19.40.57)": in_trep_but_after_suspension,
+	"All TREP Actas Verified After TREP Came Back On (2019.10.21.18.29.53)": trep_after_return,
 	"All Computo Actas Not in TREP": in_computo_but_not_trep,
 	"Last 5% Of Actas in Computo (95% = acta.2019.10.22.19.58.51.xlsx)": last_five_pct_computo,
 	"37 Argentina Actas in OAS Report": thirty_seven_argentina_actas,
 	"226 Actas in OAS Report Completed by People Who Filled Out Multiple Actas": multiple_filled_out_actas,
-	"Mebane's 274 Fraudulent Mesas (Warning: Projects From Likely (?) Unflagged Frauds!)": mebane_flagged_mesas,
+	"Mebane's 274 Fraudulent Mesas": mebane_flagged_mesas,
 	"Villegas's 950 Mesas With Votos Válidos Errors": prez_votos_validos_errors_mesas,
 	"Villegas's 3151 Mesas With Presidente/Diputado Vote Discrepancies": prez_diputado_vote_discrepancies,
-	"Argentina Actas Verified After Last Pre-TREP Suspension Sheet (19:40:57)": argentina_after_outage,
+	"Argentina Actas Verified After Last Pre-TREP Suspension Sheet (2019.10.20.19.40.57)": argentina_after_outage,
 	"Custom": []
 };
 
