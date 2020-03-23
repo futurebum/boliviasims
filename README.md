@@ -1,21 +1,21 @@
-<h3>A program for the simulation of vote tally sheets in the 2019 Bolivian General Election.</h3>
+<h3>Un programa para la proyección de actas de escrutinio de las elecciones generales bolivianas de 2019.</h3>
 
-<h4>Method</h4>
+<h4>Método</h4>
 
-Uses the naive 'random' method described here:
+Utiliza el método aleatorio descrito aquí:
 
-https://www.cepr.net/report/bolivia-elections-2019-11/
+https://www.cepr.net/report/que-sucedio-en-el-recuento-de-votos-de-las-elecciones-de-bolivia-de-2019/
 
-However, any arbitrary grouping of tally sheets can be simulated. I also provide a few pre-defined groups of tally sheets that have captured particular interest in the reports about the election.
+Sin embargo, se puede proyectar cualquier agrupación de actas. También proporciono algunos grupos predefinidos de actas que han captado especial interés en los análisis de las elecciones.
 
-<h4>Data</h4>
+<h4>Datos</h4>
 
-All the real vote totals are taken from the final cómputo spreadsheet, which is available here:
+Todos los totales de votos reales son de la hoja de cálculo final del cómputo oficial que antes estaba disponible aquí:
 
-https://computo.oep.org.bo/PubResul/acta.2019.10.25.21.09.30.xlsx
+<s>https://computo.oep.org.bo/PubResul/acta.2019.10.25.21.09.30.xlsx</s>
 
-<h4>Clarifications of Options</h4>
+<h4>Explicaciones Adicionales</h4>
 
-'Geographic Precision' => The only actas (<i>vote tally sheets</i>) which will be simulated are those for which there are matching non-simulated actas at at least the specified level of geographic precision. For example, if there's a simulated acta from the precinct (<i>recinto</i>) 'Escuela #3 de 10' in the locality (<i>localidad</i>) 'Barrio de Fulano' and the 'Geographic Precision' level is set to 'Only Recinto Matches' ('Only <i>Precinct</i> Matches'), then this acta will only be simulated if there are non-simulated actas from the same precinct ('Escuela #3 de 10'). If there aren't any, then the acta will not be simulated. This feature might be useful to get an idea of how much the simulation numbers are being skewed by imprecise matches, such as those done only at the country level, which would make for extremely crude estimates. In general, the 'Any Level' setting will attempt to perform all the simulations, no matter how crude the best matches are, whereas 'Only Recinto Matches' will only simulate the precinct-level matches, which will result in a more accurate estimate but it will only be an estimate of the actas with precinct-level matches. All other options are some intermediate point between these two extremes.
+'Precisión Geográfica' => Las únicas actas que se proyectarán son aquellas que coincidan con actas no proyectadas del nivel especificado de precisión geográfica o mejor. Por ejemplo, si hay un acta proyectada del recinto 'Escuela #3 de 10' y el nivel de precisión geográfica está de 'Sólo Coincidencias de Recinto', entonces este acta sólo será proyectada si hay actas no proyectadas del mismo recinto, o sea 'Escuela #3 de 10'. De igual manera, si el nivel de precisión geográfica está de 'Sólo Coincidencias de Localidad o Mejor' y existen actas no simuladas de la misma localidad, aunque no hay ninguna del mismo recinto, entonces este acta sí será proyectada. Esta opción podría ser útil para darse una idea del efecto de coincidencias imprecisas, como las que se hacen sólo a nivel de país, lo que produciría estimaciones extremadamente crudas. En general, con "Mejor Coincidencia" se intentará realizar todas las proyecciones, aunque sean de niveles muy altos, mientras que "Sólo Coincidencias de Recinto" se limitará a proyectar las actas con coincidencias a nivel de recinto, lo que dará como resultado una estimación más precisa, pero sería nomás una estimación de las actas con coincidencias a nivel de recinto. Todas las demás opciones representan puntos intermedios entre estos dos extremos.
 
-'Imputation By' => If this is set to 'Acta' (<i>vote tally sheet</i>), then after the simulator selects a random matching precinct, it will then randomly select an unsimulated acta from that precinct and impute the simulated acta's vote totals based on it. However, if it's set to 'Recinto' (<i>precinct</i>), then it will perform the imputation using the total of all the votes from non-simulated actas in that precinct, instead of using just one of them.
+'Prioritizar Mesas Cercanas' => Coincidencias a nivel de recinto serán, en efecto, coincidencias de las mesas más cercanas del mismo recinto. Esta cercanía será determinada numéricamente en base al número de identificación de las mesas. Por ejemplo, si la mesa en cuestión es #51140 y las otras mesas no simuladas del mismo recinto son #51130, #51141, #51142, y #51150, entonces se elegirá la mesa #51141 (distancia: 1) como base para la proyección de #51140. De no haber #51141, entonces #51142 (distancia: 2) será escogida. Si existen dos mesas a la misma distancia de la mesa en cuestión, como ocurriría en el caso de #51130 y #51150 respecto a #51140, se elegirá al azar entre estas dos mesas para cada simulacro.
