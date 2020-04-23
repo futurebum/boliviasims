@@ -312,7 +312,7 @@ function parseActas(csv_to_parse) {
 	
 function loadActas(callback) {
 	BUTTON.innerHTML = "Cargando datos electorales.";
-	JSZipUtils.getBinaryContent('data/final_computo.zip', function(err, data) {
+	JSZipUtils.getBinaryContent('https://raw.githubusercontent.com/futurebum/boliviasims/master/final_computo.zip', function(err, data) {
 		if(err) {
 			throw err;
 		}
