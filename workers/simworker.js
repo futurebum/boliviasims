@@ -1,6 +1,5 @@
 'use strict';
 
-
 const MSG_TYPE = { // different types of messages
 	NOTIFICATION: 0,
 	REAL_TOTALS: 1,
@@ -15,6 +14,65 @@ const SIM_TYPE = { // different ways to count actas.
 	ALL_ACTAS: 2
 };
 
+// from: https://en.wikipedia.org/wiki/Poisson_distribution#Generating_Poisson-distributed_random_variables
+const STEP = 500;
+function poisson_large(rate) {
+	let left = rate;
+	let k = 0;
+	let p = 1;
+	
+	do {
+		let u = Math.random();
+		while (u == 0) { u = Math.random(); } // (0,1) eh
+		p *= u;
+		
+		while (p < 1 && left > 0) {
+			if (left > STEP) {
+				p *= Math.exp(STEP);
+				left -= STEP;
+			}
+			else {
+				p *= Math.exp(left);
+				left = 0;
+			}
+		}
+	} while (p > 1);
+	
+	return k - 1;
+}
+
+// from: https://en.wikipedia.org/wiki/Poisson_distribution#Generating_Poisson-distributed_random_variables
+function poisson_small(rate) { // caps out around rate=700
+	let x = 0;
+	let p = Math.exp(-rate);
+	let s = p;
+	let u = Math.random(); // doesn't include 1, but uh who cares.
+	
+	while (u > s) {
+		p *= (rate / ++x);
+		s += p;
+	}
+	
+	return x;
+}
+
+// takes some weights, then returns randomly selected index.
+function weighted_random(weights) {
+	let total = 0;
+	for (const weight of weights) {
+		total += weight;
+	}
+	
+	let random = Math.random() * total;
+	let index = -1;
+	let cumulative = 0;
+	do { // would it be better to create cumulative array in first loop, then binary search? guess it depends on how large array is.
+		cumulative += weights[++index];
+	} while (random > cumulative); // could there be precision issues near 1? '&& index + 1 < weights.length'
+	
+	return index;
+}
+
 // generates maps which will recreate geography of the election. might use inscritos for possible weighting of decision paths.
 function GeographicMap(name, level, gm_parent) {
 	this.children = {};
@@ -24,17 +82,21 @@ function GeographicMap(name, level, gm_parent) {
 	this.name = name;
 	this.gm_parent = gm_parent;
 	this.level = level;
-	this.min_id = undefined; // for later. gonna guess that geography correlated with number ordering.
+	this.mesas = 0;
+	this.imp_mesas = 0;
+	/*this.min_id = undefined; // for later. gonna guess that geography correlated with number ordering.??
 	this.max_id = undefined;
 	this.min_imp_id = undefined;
-	this.max_imp_id = undefined;
+	this.max_imp_id = undefined;*/
 }
 
 GeographicMap.prototype.toString = function() { // just to have around.
 	return "Name: "+this.name+", Level: "+this.level+", Inscritos: "+this.inscritos+(this.gm_parent !== null && this.gm_parent !== undefined ? " | Parent: "+this.gm_parent : "");
 }
 
-// IDEA: calculate id range at each level, then give min-max and weight selections towards numerically closer ones. (probably geographically closer too.)
+// IDEA: calculate id range at each level, then give min-max and weight selections towards numerically closer ones. (possibly geographically closer too.)
+	// this is mostly because i struck out with finding lat-lon coordinates for all the precincts. (eh, concept doesn't really work.)
+// IDEA: some kind of var for trep progression. places with more mesas are more likely to report early. would weight away from these for novel areas.
 
 // ARGUMENTS
 // headers: {}
@@ -81,7 +143,13 @@ onmessage = function(e) {
 	const SIMULATION_COUNT = options["simulation_count"];
 	const LEAST_SPECIFIC_MATCH = options["least_specific_match"]; // -1 means Best Match ... (geo_length - 1) means Precinct.
 	const ALLOW_CHUMACERO = options["chumacero"];
-	const CHUMACERO_MAX_DISTANCE = Number.MAX_SAFE_INTEGER; // will figure this one out later.
+	const CHUMACERO_MAX_DISTANCE = Number.MAX_SAFE_INTEGER; // will figure this one out later. (for some kind of chumacero variation...)
+	
+	// me messing around (will do smth real later)
+	const GEO_ACCEPTED = new Array(GEO_HEADERS.length); // copy
+	for (let i=0; i<GEO_ACCEPTED.length; i++) {
+		GEO_ACCEPTED[i] = (i >= LEAST_SPECIFIC_MATCH);
+	}
 	
 	// ok, time to do the projection
 	let make_adjustable_total = function() { // allows me to keep multiple counts, so i can mix and match projected and non-projected actas.
@@ -101,16 +169,25 @@ onmessage = function(e) {
 				for (let i=0; i<VOTE_HEADERS.length; i++) { this.votes[i] -= actas[id][VOTE_HEADERS[i]]; }
 				return this;
 			},
-			add_total: function(other) {
-				this.mesas += other.mesas;
-				this.registered += other.registered;
-				for (let i=0; i<VOTE_HEADERS.length; i++) { this.votes[i] += other.votes[i]; }
+			add_total: function(other_total) {
+				this.mesas += other_total.mesas;
+				this.registered += other_total.registered;
+				for (let i=0; i<VOTE_HEADERS.length; i++) { this.votes[i] += other_total.votes[i]; }
 				return this;
 			},
 			add_imputation: function(target_acta, imp_vote_table, imp_reg) {
 				let our_votes = this.votes;
 				let reg_to_scale = target_acta[REGISTERED_VOTERS_HEADER];
 				for (let i=0; i<VOTE_HEADERS.length; i++) { our_votes[i] += (reg_to_scale * (imp_vote_table[i] / imp_reg)); }
+				++this.mesas; // assuming it's only one mesa...
+				this.registered += reg_to_scale;
+				return this;
+			},
+			add_poisson: function(target_acta, imp_vote_table, imp_reg) {
+				let our_votes = this.votes;
+				let reg_to_scale = target_acta[REGISTERED_VOTERS_HEADER];
+				// note: possible to get more votes than voters, but sims should even out in the end, so doesn't matter.
+				for (let i=0; i<VOTE_HEADERS.length; i++) { our_votes[i] += (reg_to_scale * (poisson_small(imp_vote_table[i]) / imp_reg)); }
 				++this.mesas; // assuming it's only one mesa...
 				this.registered += reg_to_scale;
 				return this;
@@ -141,7 +218,7 @@ onmessage = function(e) {
 			base_totals.add_acta(id);
 		}
 		
-		// check for map. if not, make one.
+		// it's maps all the way down...
 		let last_map = acta_map;
 		let current_map;
 		for (let j=0; j<GEO_HEADERS.length; j++) {
@@ -149,6 +226,7 @@ onmessage = function(e) {
 			
 			// for regular map
 			last_map.inscritos += reg_voters;
+			last_map.mesas += 1;
 			current_map = last_map.children[geo];
 			if (current_map === undefined) {
 				last_map.children[geo] = current_map = new GeographicMap(geo, GEO_HEADERS[j], last_map);
@@ -157,6 +235,7 @@ onmessage = function(e) {
 			// for imputation map
 			if (is_control) {
 				last_map.imp_inscritos += reg_voters;
+				last_map.imp_mesas += 1;
 				if (last_map.imp_children[geo] === undefined) {
 					last_map.imp_children[geo] = current_map; // NOTE: grabbing REGULAR map from earlier.
 				}
@@ -166,12 +245,14 @@ onmessage = function(e) {
 			last_map = current_map;
 		}
 		
-		// current_map is actually a precinct.
+		// after loop, current_map is actually a precinct.
 		acta.gm_parent = current_map;
 		current_map.inscritos += reg_voters;
+		current_map.mesas += 1;
 		current_map.children[id] = acta;
 		if (is_control) {
 			current_map.imp_inscritos += reg_voters;
+			current_map.imp_mesas += 1;
 			current_map.imp_children[id] = acta;
 		}
 		
@@ -209,25 +290,36 @@ onmessage = function(e) {
 	// look for matches!
 	postMessage( {type: MSG_TYPE.NOTIFICATION, data: "Buscando coincidencias geográficas."} );
 	specificity_check: for (const [id, acta] of Object.entries(to_project)) {
-		let map = acta.gm_parent;
 		let best_match;
-		match_search: for (let i=GEO_HEADERS.length-1; i >= LEAST_SPECIFIC_MATCH; --i) {
-			for (const key in map.imp_children) { // check if empty.
+		match_search: for (let i=GEO_HEADERS.length-1, map = acta.gm_parent; i >= LEAST_SPECIFIC_MATCH; --i) {
+			if (GEO_ACCEPTED[i] && Object.keys(map.imp_children).length > 0) {
 				best_match = map;
 				break match_search;
 			}
+			
 			map = map.gm_parent;
 		}
 		
 		// if no match, then save to exclude later and jump to next iteration of loop.
 		if (best_match === undefined) {
-			excluded.push(id);
+			// are we accepting base matches? if not, then exclude. else, create a fake precompute from base map then continue loop.
+			if (LEAST_SPECIFIC_MATCH >= 0) {
+				excluded.push(id);
+			}
+			else { // create a fake pre-compute value that starts at base.
+				traversal_lookup[id] = {
+					geo_index: -1,
+					map: acta_map
+				};
+			}
+				
 			continue specificity_check;
 		}
 		
 		// check to see if we're doing chumacero (requires precinct match).
-		let geo_index = GEO_HEADERS.indexOf(map.level);
+		let geo_index = GEO_HEADERS.indexOf(best_match.level);
 		if (ALLOW_CHUMACERO && geo_index == GEO_HEADERS.length - 1) {
+			// my actual opinion on this, though, is that it's probably worthless and just adds noise to the predictions.
 			//const MAX_DISTANCE = 5;
 			/*const N_CLOSEST_MESAS = 4;
 			let c_arr = [];
@@ -258,10 +350,10 @@ onmessage = function(e) {
 				}
 			}*/
 			
-			// do generalized chumacero (find closest 1-2 mesas in precinct) [could take all and then weight selex toward closer ones?]
+			// generalized chumacero (find closest 1-2 mesas in precinct) [could take all and then weight selex toward closer ones?]
 			let best = CHUMACERO_MAX_DISTANCE;
 			let c_arr = [];
-			for (let precinct_mesa_id in map.imp_children) {
+			for (let precinct_mesa_id in best_match.imp_children) {
 				let diff = Math.abs(id - precinct_mesa_id);
 				if (diff < best) {
 					c_arr.length = 0;
@@ -273,37 +365,46 @@ onmessage = function(e) {
 				}
 			}
 			
-			map = new GeographicMap(id, "CHUMACERO", map.gm_parent);
-			geo_index = GEO_HEADERS.length - 1; // fake super-precinct.
+			best_match = new GeographicMap(id, "CHUMACERO", best_match.gm_parent);
+			geo_index = GEO_HEADERS.length - 1; // fake mini-precinct.
 			for (let chumacero_id of c_arr) {
-				map.imp_children[chumacero_id] = actas[chumacero_id];
+				best_match.imp_children[chumacero_id] = actas[chumacero_id];
 			}
 		}
 		
 		// add to precompute object.
 		traversal_lookup[id] = {
 			geo_index: geo_index,
-			map: map
+			map: best_match
 		};
 	}
-	
-	console.debug('BEFORE: real mesas -> '+real_totals.mesas);
 	
 	// clean up exclusions. (didn't want to do while iterating over to_project earlier.)
 	for (const id of excluded) {
 		unproject(id);
 	}
 	
-	//console.debug('AFTER: real mesas -> '+real_totals.mesas);
+	// debug report on matches.
+	let counts = new Array(GEO_HEADERS.length);
+	let base_count = 0;
+	counts.fill(0);
+	for (const [id, obj] of Object.entries(traversal_lookup)) {
+		obj.geo_index >= 0 ? counts[obj.geo_index]++ : base_count++;
+	}
+	console.debug("Match report:");
+	for (let idx = 0; idx<GEO_HEADERS.length; idx++) {
+		console.debug(GEO_HEADERS[idx] + " => " + counts[idx]);
+	}
+	console.debug("Base => "+base_count);
+	console.debug("Excluded => "+excluded.length);
 	
 	// exclusions post-processing and send out real totals.
 	postMessage( {type: MSG_TYPE.EXCLUSIONS, data: excluded} ); // post exclusions.
 	postMessage( {type: MSG_TYPE.REAL_TOTALS, data: real_totals.get_response_map()} ); // post real totals.
 	
 	// SIMULATION.
-	let saved_imp_vote_tables = {}; // lookup hash. key: acta_id. value: vote table for given acta. (as an array, to speed processing a little)
-	let i=0;
-	for (; i< SIMULATION_COUNT; i++) {
+	let saved_imp_vote_tables = {}; // lookup hash. key: numero_mesa. value: vote table for given acta. (as an array, to speed processing a little)
+	for (let i=0; i< SIMULATION_COUNT; i++) {
 		let sim = make_adjustable_total().add_total(base_totals);
 		for (const [id, acta] of Object.entries(to_project)) {
 			// do the random selection process to get an acta.
@@ -312,7 +413,17 @@ onmessage = function(e) {
 			let rand_key;
 			for (let j=lookup_data.geo_index; j<GEO_HEADERS.length; j++) { // do random down to mesa level.
 				let rand_keys = Object.keys(current_map.imp_children);
-				rand_key = rand_keys[Math.floor(Math.random() * rand_keys.length)];
+				let rand_index = Math.floor(Math.random() * rand_keys.length);
+				
+				// one day i'll figure a scheme for this, i suppose.
+				/*let weights = Array(rand_keys.length);
+				switch (j) {
+					default:
+						weights.fill(1);
+				}
+				rand_index = weighted_random(weights);*/
+				
+				rand_key = rand_keys[rand_index];
 				current_map = current_map.imp_children[rand_key];
 			}
 			
