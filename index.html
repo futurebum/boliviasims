@@ -416,7 +416,7 @@ function do_sims(sim_headers, sim_actas) {
 					}*/
 					
 					// find the top two parties, which are always going to be point of dispute. (in future, allow people to choose.)
-					let top_two = get_top_two(sims_mean); // 0 = lower (name), 1 = higher (name).
+					let top_two = ['CC', 'MAS - IPSP'];
 
 					// calculate real margin.
 					let real_margin = get_valid_margin(real_totals, top_two[1], top_two[0]) * 100;
@@ -765,27 +765,6 @@ function get_average (to_average) { // to_average: array of totals
 		mean[v_key] /= to_average.length;
 	}
 	return mean;
-}
-
-function get_top_two (totals) { // return array is in ascending order.
-	let top_two = ['', '']; // 0 = lower (name), 1 = higher (name).
-	let top_two_val = [0, 0]; // 0 = lower, 1 = higher.
-	for (const v of HEADERS.valids) { // only valids.
-		let votes = totals[v];
-		if (votes > top_two_val[0]) {
-			if (votes > top_two_val[1]) {
-				top_two[0] = top_two[1];
-				top_two_val[0] = top_two_val[1];
-				top_two[1] = v;
-				top_two_val[1] = votes;
-			}
-			else {
-				top_two[0] = v;
-				top_two_val[0] = votes;
-			}
-		}
-	}
-	return top_two;
 }
 
 </script>
