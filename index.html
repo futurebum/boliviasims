@@ -248,7 +248,7 @@ function parseActas(csv_to_parse) {
 		let quote = false;  // true means we're inside a quoted field
 
 		// iterate over each character, keep track of current row and column (of the returned array)
-		for (let header_index = 0, header = p_headers[0], c = 0; c < str.length; c++) {
+		for (let header_index = 0, c = 0; c < str.length; c++) {
 			let cc = str[c], nc = str[c+1];        // current character, next character
 			
 			// If the current character is a quotation mark, and we're inside a
