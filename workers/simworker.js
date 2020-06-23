@@ -438,10 +438,10 @@ onmessage = function(e) {
 				saved_imp_vote_tables[rand_key] = imp_vote_table;
 			}
 			
-			sim.add_imputation(acta, imp_vote_table, rand_acta[REGISTERED_VOTERS_HEADER]);
+			sim.add_poisson(acta, imp_vote_table, rand_acta[REGISTERED_VOTERS_HEADER]);
 		}
 		
-		// post simulation! (it'll know when we hit x sims.)
+		// post simulation!
 		postMessage( {type: MSG_TYPE.SIM, data: sim.get_response_map()} );
 	}
 	
